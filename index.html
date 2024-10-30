@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Temperos</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(() => console.log("Service Worker registrado com sucesso."))
+                .catch(error => console.error("Falha ao registrar o Service Worker:", error));
+        }
+    </script>
+    <style>
+        /* Seu estilo aqui */
+        /* O estilo CSS básico do código anterior */
+    </style>
+
+</head>
+
+<body>
+
+    <div class="calculator-container">
+        <h2>Calculadora de Temperos</h2>
+        <label for="tipoInsumo">Escolha o Insumo:</label>
+        <select id="tipoInsumo">
+            <option value="CARNE">Carne</option>
+            <option value="COSTELA">Costela</option>
+            <option value="CARNE SECA">Carne Seca</option>
+            <option value="MASSA ESFIHA">Massa Esfiha</option>
+            <option value="MASSA PIZZA">Massa Pizza</option>
+        </select>
+
+        <label for="quantidade">Quantidade (em kg):</label>
+        <div class="voice-input">
+            <input type="number" id="quantidade" placeholder="Digite a quantidade em kg" step="0.1" min="0.1">
+            <button class="voice-button" onclick="capturarVoz()">🎤</button>
+        </div>
+
+        <button onclick="calcularIngredientes()">Calcular</button>
+
+        <div class="result" id="resultado"></div>
+    </div>
+
+    <script>
+        const ingredientesData = {
+            "CARNE": {
+                "Vinagre": 950,
+                "Sal": 255,
+                "Orégano": 18,             // Valor ajustado
+                "Pimenta do Reino": 13,     // Valor ajustado
+                "Tomate": 2000,             // Correção para 2000 gramas
+                "Cebola": 2000,             // Correção para 2000 gramas
+                "base_qty": 5
+            },
+            "COSTELA": {
+                "Óleo": 100,
+                "Cebola": 550,
+                "Tomate": 1000,
+                "Alho": 200,
+                "Sal": 27,
+                "Caldo de Costela": 30,
+                "base_qty": 3
+            },
+            "CARNE SECA": {
+                "Pimentão": 1000,
+                "Tomate": 1000,
+                "Alho": 200,
+                "Sal": 28,
+                "base_qty": 3
+            },
+            "MASSA ESFIHA": {
+                "Leite": 610,
+                "Água Gelada": 2396,
+                "Farinha Pastel": 4200,
+                "Farinha Venturelli": 1800,
+                "Açúcar": 600,
+                "Sal": 16,
+                "Fermento": 16,
+                "Óleo": 600,
+                "base_qty": 6
+            },
+            "MASSA PIZZA": {
+                "Água Gelada": 2950,
+                "Farinha Longa Fermentação": 4000,
+                "Farinha Venturelli": 1000,
+                "Sal": 289,
+                "Açúcar": 200,
+                "Óleo": 500,
+                "base_qty": 5
+            }
+        };
+
+        function calcularIngredientes() {
+            const tipoInsumo = document.getElementById("tipoInsumo").value;
+            const quantidade = parseFloat(document.getElementById("quantidade").value);
+            const resultadoDiv = document.getElementById("resultado");
+
+            // Limpa o resultado anterior
+            resultadoDiv.innerHTML = "";
+
+            if (isNaN(quantidade) || quantidade <= 0) {
+                resultadoDiv.innerHTML = "<p>Por favor, insira uma quantidade válida.</p>";
+                return;
+            }
+
+            const insumoData = ingredientesData[tipoInsumo];
+            const proporcao = quantidade / insumoData.base_qty;
+            let ingredientesCalculados = "";
+
+            let contador = 0; // Para criar identificadores únicos para cada item
+            for (const [ingrediente, quant] of Object.entries(insumoData)) {
+                if (ingrediente === "base_qty") continue;
+
+                let quantidadeAjustada = Math.round(quant * proporcao);
+                ingredientesCalculados += `<p id="ingrediente-${contador}" onclick="riscarIngrediente(${contador})">${ingrediente}: ${quantidadeAjustada} gr</p>`;
+                contador++;
+            }
+
+            resultadoDiv.innerHTML = ingredientesCalculados;
+        }
+
+        function riscarIngrediente(id) {
+            const ingrediente = document.getElementById(`ingrediente-${id}`);
+            if (ingrediente) {
+                // Alterna entre riscado e normal ao clicar
+                if (ingrediente.style.textDecoration === "line-through") {
+                    ingrediente.style.textDecoration = "none";
+                } else {
+                    ingrediente.style.textDecoration = "line-through";
+                }
+            }
+        }
+
+
+
+
+
+        function capturarVoz() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert("Seu navegador não suporta reconhecimento de voz.");
+                return;
+            }
+
+            const recognition = new webkitSpeechRecognition();
+            recognition.lang = "pt-BR";
+            recognition.start();
+
+            recognition.onresult = function (event) {
+                const vozParaTexto = event.results[0][0].transcript.replace(",", ".");
+                document.getElementById("quantidade").value = parseFloat(vozParaTexto);
+            }
+
+            recognition.onerror = function () {
+                alert("Erro no reconhecimento de voz. Tente novamente.");
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
